@@ -14,7 +14,6 @@ const Hero = () => {
 
   useEffect(() => {
     const currentWord = words[wordIndex];
-
     const typingSpeed = isDeleting ? 80 : 120;
 
     const timeout = setTimeout(() => {
@@ -37,13 +36,30 @@ const Hero = () => {
   }, [charIndex, isDeleting, wordIndex]);
 
   return (
-    <section className={`relative w-full h-screen mx-auto`}>
+    <section
+      className="
+        relative 
+        w-full 
+        h-screen sm:h-screen
+        min-h-[100svh] sm:min-h-0
+        mx-auto
+        overflow-x-hidden
+      "
+    >
+      {/* TEXT */}
       <div
-        className={`absolute inset-0 top-[120px]  max-w-7xl mx-auto ${styles.paddingX} flex flex-row items-start gap-5`}
+        className={`
+          absolute inset-0
+          top-[96px] sm:top-[120px]
+          max-w-7xl mx-auto
+          ${styles.paddingX}
+          flex flex-row items-start gap-5
+          z-20
+        `}
       >
         <div className="flex flex-col justify-center items-center mt-5">
           <div className="w-5 h-5 rounded-full bg-[#38b6ff]" />
-          <div className="w-1 sm:h-80 h-40 violet-gradient" />
+          <div className="w-1 h-40 sm:h-80 violet-gradient" />
         </div>
 
         <div>
@@ -56,7 +72,7 @@ const Hero = () => {
 
           <p className={`${styles.heroSubText} mt-2 text-white-100`}>
             Engineering future-ready software solutions,
-            <br className="sm:block hidden" />
+            <br className="hidden sm:block" />
             delivering{" "}
             <span className="text-[#38b6ff] font-bold">
               {typedText}
@@ -66,12 +82,18 @@ const Hero = () => {
         </div>
       </div>
 
-      <ComputersCanvas />
-
+      {/* CANVAS */}
+      <div
+        className="
+          absolute inset-0
+          h-[320px] sm:h-full
+          top-auto sm:top-0
+        "
+      >
+        <ComputersCanvas />
+      </div>
     </section>
   );
 };
-
-
 
 export default Hero;

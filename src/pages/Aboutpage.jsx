@@ -1,23 +1,20 @@
-import React, { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom"; // Import Link for redirection
 
 import { styles } from "../styles";
 import { SectionWrapper } from "../hoc";
 import { fadeIn, textVariant } from "../utils/motion";
 
 /*
-  PrimeCore About - Polished Upgrade
-  Upgrades included:
-  - Modal upgraded to tabbed details (Overview / Deliverables / Timeline & Pricing)
-  - Per-service deep content object (more realistic scope examples)
-  - Inline lightweight contact form in modal (no backend) + email:mailto fallback
-  - Accessibility: Esc to close, focus trap, aria attributes, reduced-motion support
-  - Improved responsive and visual polish: subtle separators, consistent spacing
-  - No images (inline SVG only). Cards use subtle hover scale (no tilt)
+  UPDATES:
+  1. All Contact Links now redirect to '/contactpage'.
+  2. Replaced <a> tags with <Link> for SPA navigation.
+  3. Removed inline ContactForm to centralize leads on the Contact Page.
 */
 
 const Icon = ({ name }) => {
-  const size = 20;
+  const size = 24;
   const common = {
     stroke: "currentColor",
     strokeWidth: 1.6,
@@ -94,324 +91,298 @@ const Icon = ({ name }) => {
   }
 };
 
-const ServiceCard = ({ i, s, onOpen }) => (
-  <motion.div
-    variants={fadeIn("right", "spring", i * 0.06, 0.8)}
-    className="w-full p-[2px] rounded-[14px] bg-gradient-to-br from-[#0ea5e9] to-[#06b6d4] shadow-2xl h-full"
-  >
-    <div className="bg-[#071023] rounded-[12px] p-5 h-full flex flex-col justify-between gap-4 transition-transform duration-200 hover:-translate-y-1">
-      <div className="flex items-start gap-3">
-        <div className="w-12 h-12 bg-white/6 rounded-lg flex items-center justify-center text-blue-300">
-          <Icon name={s.icon} />
-        </div>
-        <div className="flex-1">
-          <h4 className="text-white text-[16px] font-semibold">{s.title}</h4>
-          <p className="text-secondary text-[13px] mt-1">{s.short}</p>
-          <div className="mt-2 flex gap-2 flex-wrap">
-            {s.tags?.slice(0, 3).map((t, idx) => (
-              <span
-                key={idx}
-                className="text-[12px] px-2 py-1 bg-white/5 rounded text-white/90"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-3">
-        <button
-          onClick={() => onOpen(s.key)}
-          className="px-3 py-2 rounded-md bg-white/6 border border-white/8 text-sm text-white/90 hover:bg-white/8 transition"
-          aria-label={`Open details for ${s.title}`}
-        >
-          Learn more
-        </button>
-        <a
-          href="/contactpage"
-          className="text-sm px-3 py-2 bg-white text-blue-700 rounded-md font-semibold shadow hover:opacity-95"
-        >
-          Start project
-        </a>
-      </div>
-    </div>
-  </motion.div>
-);
-
-// Modal with tabs and focus management
-const Modal = ({ open, onClose, service }) => {
-  const [tab, setTab] = useState("overview");
-  const dialogRef = useRef(null);
-
-  // focus trap and initial focus
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.activeElement;
-    const focusable =
-      dialogRef.current?.querySelectorAll(
-        "button, [href], input, textarea, select"
-      ) || [];
-    const first = focusable[0];
-    first?.focus();
-
-    const onKey = (e) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "Tab") {
-        // simple focus trap
-        const nodes = Array.from(focusable);
-        if (nodes.length === 0) return;
-        const idx = nodes.indexOf(document.activeElement);
-        if (e.shiftKey && idx === 0) {
-          e.preventDefault();
-          nodes[nodes.length - 1].focus();
-        } else if (!e.shiftKey && idx === nodes.length - 1) {
-          e.preventDefault();
-          nodes[0].focus();
-        }
+const ServiceCard = ({ i, s, onOpen, isMobile }) => {
+  const motionProps = isMobile
+    ? {
+        animate: { opacity: 1, x: 0, y: 0 },
+        initial: { opacity: 1, x: 0, y: 0 },
+        transition: { duration: 0 },
       }
-    };
-
-    document.addEventListener("keydown", onKey);
-    return () => {
-      prev?.focus();
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, onClose]);
-
-  useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "auto";
-    return () => (document.body.style.overflow = "auto");
-  }, [open]);
-
-  if (!open || !service) return null;
-
-  // Reduced motion support
-  const motionProps =
-    window?.matchMedia &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? {}
-      : {
-          initial: { scale: 0.96, opacity: 0 },
-          animate: { scale: 1, opacity: 1 },
-          transition: { duration: 0.18 },
-        };
+    : { variants: fadeIn("up", "spring", i * 0.1, 0.75) };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        aria-hidden="true"
-      />
-
-      <motion.div
-        {...motionProps}
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${service.title} details`}
-        className="relative max-w-4xl w-full mx-4 bg-[#071023] rounded-lg p-6 border border-white/8 shadow-2xl"
-      >
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-white/70 px-2 py-1 rounded hover:bg-white/6"
-        >
-          ✕
-        </button>
-
-        <div className="md:flex md:items-start md:gap-6">
-          <div className="flex-shrink-0">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-lg flex items-center justify-center text-black font-bold">
-              {service.initials}
-            </div>
+    <motion.div
+      {...motionProps}
+      className="w-full p-[1px] rounded-[14px] bg-gradient-to-br from-[#0ea5e9] to-[#06b6d4] shadow-xl"
+    >
+      <div className="bg-[#071023] rounded-[13px] p-5 h-full flex flex-col justify-between min-h-[280px]">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 flex-shrink-0 bg-white/10 rounded-lg flex items-center justify-center text-blue-300">
+            <Icon name={s.icon} />
           </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-white text-[18px] font-bold leading-tight">
+              {s.title}
+            </h4>
+            <p className="text-secondary text-[13px] mt-2 line-clamp-3 leading-snug">
+              {s.short}
+            </p>
 
-          <div className="mt-2 md:mt-0 md:flex-1">
-            <h3 className="text-white text-[18px] font-semibold">
-              {service.title}
-            </h3>
-            <p className="text-secondary mt-2">{service.short}</p>
-
-            <div className="mt-4">
-              <nav className="flex gap-2" aria-label="Service tabs">
-                {[
-                  { key: "overview", label: "Overview" },
-                  { key: "deliverables", label: "Deliverables" },
-                  { key: "timeline", label: "Timeline & Pricing" },
-                  { key: "contact", label: "Contact" },
-                ].map((t) => (
-                  <button
-                    key={t.key}
-                    onClick={() => setTab(t.key)}
-                    className={`px-3 py-1 rounded ${
-                      tab === t.key
-                        ? "bg-white text-blue-700"
-                        : "text-white/80 bg-white/5"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </nav>
-
-              <div className="mt-4 text-secondary text-[14px]">
-                {tab === "overview" && (
-                  <div>
-                    <p className="mb-3">{service.details.overview}</p>
-                    <ul className="list-disc ml-5 space-y-1">
-                      {service.details.features.map((f, idx) => (
-                        <li key={idx}>{f}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {tab === "deliverables" && (
-                  <div>
-                    <h4 className="text-white font-semibold mb-2">
-                      What we deliver
-                    </h4>
-                    <ul className="list-decimal ml-5 space-y-1">
-                      {service.details.deliverables.map((d, idx) => (
-                        <li key={idx}>{d}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {tab === "timeline" && (
-                  <div>
-                    <h4 className="text-white font-semibold mb-2">
-                      Timeline & indicative pricing
-                    </h4>
-                    <p className="mb-2">{service.details.timeline_text}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-                      {service.details.pricing.map((p, idx) => (
-                        <div key={idx} className="p-3 bg-white/5 rounded">
-                          <p className="text-white font-semibold">{p.tier}</p>
-                          <p className="text-secondary mt-1">{p.price}</p>
-                          <p className="text-[13px] mt-1">{p.note}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {tab === "contact" && (
-                  <div>
-                    <h4 className="text-white font-semibold mb-2">
-                      Request a discovery
-                    </h4>
-                    <ContactForm
-                      prefillSubject={`${service.title} — Discovery`}
-                      onSuccess={() => alert("Thanks! We'll reach out soon.")}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-6 flex gap-3 justify-end">
-                <a
-                  href={`mailto:hello@primecore.com?subject=${encodeURIComponent(
-                    service.title + " enquiry"
-                  )}`}
-                  className="px-4 py-2 bg-white text-blue-700 rounded font-semibold"
+            <div className="mt-3 flex flex-wrap gap-2">
+              {s.tags?.slice(0, 3).map((t, idx) => (
+                <span
+                  key={idx}
+                  className="text-[11px] px-2 py-1 bg-white/5 rounded text-white/80 whitespace-nowrap"
                 >
-                  Email us
-                </a>
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 border border-white/10 rounded text-white"
-                >
-                  Close
-                </button>
-              </div>
+                  {t}
+                </span>
+              ))}
             </div>
           </div>
         </div>
-      </motion.div>
-    </div>
+
+        <div className="mt-5 flex items-center justify-between gap-3 pt-4 border-t border-white/5">
+          <button
+            onClick={() => onOpen(s.key)}
+            className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/90 active:bg-white/10 transition"
+          >
+            Learn more
+          </button>
+
+          {/* UPDATED: Start project button now links to /contactpage */}
+          <Link
+            to="/contactpage"
+            className="flex-1 text-center py-2 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg text-sm font-semibold shadow hover:opacity-90"
+          >
+            Start project
+          </Link>
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
-const ContactForm = ({
-  prefillSubject = "Project inquiry",
-  onSuccess = () => {},
-}) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+const Modal = ({ open, onClose, service }) => {
+  const [tab, setTab] = useState("overview");
 
-  const submit = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    // No backend — use mailto fallback and show success toast
-    const body = encodeURIComponent(
-      `Name: ${name}%0AEmail: ${email}%0A%0A${message}`
-    );
-    const mailto = `mailto:hello@primecore.com?subject=${encodeURIComponent(
-      prefillSubject
-    )}&body=${body}`;
-    window.location.href = mailto;
-    setTimeout(() => {
-      setLoading(false);
-      onSuccess();
-    }, 500);
-  };
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+      setTab("overview");
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => (document.body.style.overflow = "auto");
+  }, [open]);
+
+  if (!service) return null;
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <input
-        required
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Your name"
-        className="w-full px-3 py-2 rounded bg-white/5 text-white outline-none"
-      />
-      <input
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email"
-        type="email"
-        className="w-full px-3 py-2 rounded bg-white/5 text-white outline-none"
-      />
-      <textarea
-        required
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Short message / goals"
-        rows={4}
-        className="w-full px-3 py-2 rounded bg-white/5 text-white outline-none"
-      />
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 bg-white text-blue-700 rounded font-semibold"
-        >
-          Send request
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setName("");
-            setEmail("");
-            setMessage("");
-          }}
-          className="px-4 py-2 border border-white/10 rounded text-white"
-        >
-          Reset
-        </button>
-      </div>
-    </form>
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+          />
+
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="relative w-full max-w-4xl bg-[#071023] rounded-xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute top-0 right-0 z-10 p-3">
+              <button
+                onClick={onClose}
+                className="w-8 h-8 flex items-center justify-center bg-black/40 rounded-full text-white/70 hover:bg-white/10 hover:text-white backdrop-blur-md"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-5 sm:p-8 custom-scrollbar">
+              <div className="flex flex-col md:flex-row gap-5 md:gap-8">
+                <div className="flex-shrink-0 flex items-start gap-4 md:block">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center text-black font-bold text-xl shadow-lg">
+                    {service.initials}
+                  </div>
+                  <div className="md:mt-4 md:hidden">
+                    <h3 className="text-white text-xl font-bold leading-tight">
+                      {service.title}
+                    </h3>
+                    <p className="text-secondary text-sm mt-1">
+                      {service.short}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex-1">
+                  <div className="hidden md:block mb-4">
+                    <h3 className="text-white text-2xl font-bold">
+                      {service.title}
+                    </h3>
+                    <p className="text-secondary mt-1">{service.short}</p>
+                  </div>
+
+                  <nav className="flex flex-wrap gap-2 mb-6 border-b border-white/10 pb-4 sticky top-0 bg-[#071023] z-10 pt-2">
+                    {[
+                      { key: "overview", label: "Overview" },
+                      { key: "deliverables", label: "Deliverables" },
+                      { key: "timeline", label: "Timeline & Pricing" },
+                      { key: "contact", label: "Contact" },
+                    ].map((t) => (
+                      <button
+                        key={t.key}
+                        onClick={() => setTab(t.key)}
+                        className={`px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all ${
+                          tab === t.key
+                            ? "bg-white text-blue-900 shadow-md scale-105"
+                            : "text-white/60 bg-white/5 hover:bg-white/10"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </nav>
+
+                  <div className="min-h-[200px]">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={tab}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {tab === "overview" && (
+                          <div className="space-y-4">
+                            <p className="text-gray-300 leading-relaxed">
+                              {service.details.overview}
+                            </p>
+                            <div className="bg-white/5 p-4 rounded-lg">
+                              <h5 className="text-white font-semibold mb-2 text-sm uppercase text-blue-400">
+                                Features
+                              </h5>
+                              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {service.details.features.map((f, idx) => (
+                                  <li
+                                    key={idx}
+                                    className="flex items-center gap-2 text-sm text-gray-300"
+                                  >
+                                    <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                                    {f}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {tab === "deliverables" && (
+                          <div className="space-y-4">
+                            <div className="bg-gradient-to-r from-green-500/10 to-transparent p-4 rounded-lg border-l-4 border-green-500">
+                              <h4 className="text-white font-semibold mb-3">
+                                What we deliver
+                              </h4>
+                              <ul className="space-y-3">
+                                {service.details.deliverables.map((d, idx) => (
+                                  <li
+                                    key={idx}
+                                    className="flex items-start gap-3 text-sm text-gray-300"
+                                  >
+                                    <span className="bg-green-500/20 text-green-400 p-1 rounded">
+                                      ✓
+                                    </span>
+                                    {d}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        )}
+
+                        {tab === "timeline" && (
+                          <div className="space-y-4">
+                            <p className="text-gray-300 italic border-l-2 border-yellow-500 pl-4">
+                              {service.details.timeline_text}
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                              {service.details.pricing.map((p, idx) => (
+                                <div
+                                  key={idx}
+                                  className="p-4 bg-white/5 rounded-lg border border-white/5"
+                                >
+                                  <p className="text-blue-300 font-bold text-sm uppercase">
+                                    {p.tier}
+                                  </p>
+                                  <p className="text-white font-bold text-lg mt-1">
+                                    {p.price}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-2">
+                                    {p.note}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* UPDATED: Contact Tab now directs to /contactpage */}
+                        {tab === "contact" && (
+                          <div className="bg-blue-600/10 p-6 rounded-lg border border-blue-500/20 text-center">
+                            <h4 className="text-white font-semibold mb-2 text-xl">
+                              Ready to start?
+                            </h4>
+                            <p className="text-gray-300 mb-6 text-sm">
+                              Fill out our detailed inquiry form on the contact
+                              page to get started with {service.title}.
+                            </p>
+                            <Link
+                              to="/contactpage"
+                              className="inline-block w-full sm:w-auto px-8 py-3 bg-white text-blue-600 font-bold rounded-lg shadow-lg hover:bg-gray-100 transition"
+                            >
+                              Go to Contact Page
+                            </Link>
+                          </div>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-white/10 flex flex-col-reverse sm:flex-row gap-3 justify-end">
+                <button
+                  onClick={onClose}
+                  className="px-6 py-2.5 rounded-lg border border-white/10 text-white/70 hover:bg-white/5 font-medium text-sm transition"
+                >
+                  Close
+                </button>
+
+                {/* UPDATED: Footer Email button now links to /contactpage */}
+                <Link
+                  to="/contactpage"
+                  className="px-6 py-2.5 bg-white text-blue-900 rounded-lg font-bold text-sm shadow-lg text-center transition hover:bg-gray-100"
+                >
+                  Contact Us
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };
 
 const About = () => {
-  // detailed per-service content keyed by 'key'
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Services Data (Unchanged)
   const servicesMap = {
     web: {
       key: "web",
@@ -450,7 +421,6 @@ const About = () => {
         ],
       },
     },
-
     api: {
       key: "api",
       title: "Full-Stack & API Engineering",
@@ -487,7 +457,6 @@ const About = () => {
         ],
       },
     },
-
     mobile: {
       key: "mobile",
       title: "Mobile Apps (React Native)",
@@ -515,7 +484,6 @@ const About = () => {
         ],
       },
     },
-
     ai: {
       key: "ai",
       title: "AI & Automation",
@@ -543,7 +511,6 @@ const About = () => {
         ],
       },
     },
-
     cloud: {
       key: "cloud",
       title: "Cloud & DevOps",
@@ -567,7 +534,6 @@ const About = () => {
         ],
       },
     },
-
     growth: {
       key: "growth",
       title: "Social & Growth",
@@ -601,6 +567,37 @@ const About = () => {
     },
   };
 
+  const teamMembers = [
+    {
+      name: "Priyanshu Hatwal",
+      role: "Founder & Product Lead",
+      initials: "PH",
+      bio: "Driving the technical vision and architecture for scalable digital products.",
+      skills: ["Product Strategy", "System Design", "Leadership"],
+    },
+    {
+      name: "Aatish Singh",
+      role: "Content & Strategy Lead",
+      initials: "AS",
+      bio: "Crafting compelling narratives and video strategies that drive engagement.",
+      skills: ["Video Editing", "Content Strategy", "Storytelling"],
+    },
+    {
+      name: "Aadil Ansari",
+      role: "Frontend Engineering Lead",
+      initials: "AA",
+      bio: "Building high-performance, accessible, and pixel-perfect user interfaces.",
+      skills: ["React/Next.js", "UI/UX", "Performance"],
+    },
+    {
+      name: "Mohit Singh",
+      role: "Visual & Marketing Specialist",
+      initials: "MS",
+      bio: "Blending aesthetics with marketing insights to create impactful brand visuals.",
+      skills: ["Visual Design", "Branding", "Field Marketing"],
+    },
+  ];
+
   const keys = Object.keys(servicesMap);
   const initialCards = keys.map((k) => servicesMap[k]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -618,24 +615,32 @@ const About = () => {
 
   return (
     <>
-      <motion.div variants={textVariant()}>
+      <motion.div
+        variants={isMobile ? {} : textVariant()}
+        initial={isMobile ? { opacity: 1, y: 0 } : "hidden"}
+        animate={isMobile ? { opacity: 1, y: 0 } : "show"}
+      >
         <p className={styles.sectionSubText}>About PrimeCore</p>
-        <h2 className={styles.sectionHeadText}>
-          Building Future-Ready{" "}
+        <h2
+          className={`${styles.sectionHeadText} text-[30px] sm:text-[50px] leading-tight`}
+        >
+          Building Future-Ready <br className="sm:block hidden" />
           <span className="text-[#38b6ff]">Digital Experiences</span>
         </h2>
       </motion.div>
 
       <motion.p
-        variants={fadeIn("", "", 0.1, 1)}
-        className="mt-4 text-secondary text-[17px] max-w-3xl leading-[30px]"
+        variants={isMobile ? {} : fadeIn("", "", 0.1, 1)}
+        initial={isMobile ? { opacity: 1 } : "hidden"}
+        animate={isMobile ? { opacity: 1 } : "show"}
+        className="mt-4 text-secondary text-[15px] sm:text-[17px] max-w-3xl leading-[24px] sm:leading-[30px]"
       >
         PrimeCore is a product-first engineering studio focused on strategy,
         design and engineering. We ship high-quality digital products and
         support them with growth and operations.
       </motion.p>
 
-      <div className="mt-6 flex gap-3 flex-wrap">
+      <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
         {[
           "Product Strategy",
           "Design Systems",
@@ -644,81 +649,94 @@ const About = () => {
         ].map((c, i) => (
           <motion.span
             key={i}
-            variants={fadeIn("up", "spring", i * 0.05, 0.7)}
-            className="px-3 py-1 bg-white/6 rounded-md text-sm text-white"
+            variants={isMobile ? {} : fadeIn("up", "spring", i * 0.05, 0.7)}
+            initial={isMobile ? { opacity: 1, y: 0 } : "hidden"}
+            animate={isMobile ? { opacity: 1, y: 0 } : "show"}
+            className="px-3 py-1.5 bg-white/6 rounded-md text-xs sm:text-sm text-white"
           >
             {c}
           </motion.span>
         ))}
       </div>
 
-      <div className="mt-10">
-        <h3 className="text-white text-[26px] font-bold mb-2">What we do</h3>
-        <p className="text-secondary max-w-3xl leading-[26px]">
-          Click any card to open a focused detail panel (tabbed) — no layout
-          shifts, accessible and responsive.
+      <div className="mt-12">
+        <h3 className="text-white text-[22px] sm:text-[26px] font-bold mb-3">
+          What we do
+        </h3>
+        <p className="text-secondary max-w-3xl leading-[24px] mb-6 text-sm sm:text-base">
+          Click any card to open a focused detail panel.
         </p>
 
-        <div className="mt-6 grid items-stretch grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid items-stretch grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {initialCards.map((s, i) => (
-            <ServiceCard key={s.key} i={i} s={s} onOpen={openService} />
+            <ServiceCard
+              key={s.key}
+              i={i}
+              s={s}
+              onOpen={openService}
+              isMobile={isMobile}
+            />
           ))}
         </div>
       </div>
 
-      <div className="mt-12">
-        <h3 className="text-white text-[26px] font-bold mb-3">Meet the team</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            {
-              name: "Priyanshu Hatwal",
-              role: "Founder — Product & Engineering",
-              initials: "PH",
-            },
-            {
-              name: "Anjali Sharma",
-              role: "Design Lead — UI/UX",
-              initials: "AS",
-            },
-            {
-              name: "Rohit Verma",
-              role: "Tech Lead — Backend",
-              initials: "RV",
-            },
-            { name: "Maya Kapoor", role: "Growth & Marketing", initials: "MK" },
-          ].map((m, i) => (
+      <div className="mt-16 sm:mt-24 pb-12">
+        <motion.div
+          variants={isMobile ? {} : textVariant()}
+          initial={isMobile ? { opacity: 1, y: 0 } : "hidden"}
+          animate={isMobile ? { opacity: 1, y: 0 } : "show"}
+          className="mb-8"
+        >
+          <h3 className="text-white text-[28px] sm:text-[36px] font-bold">
+            Meet the Minds
+          </h3>
+          <p className="text-secondary mt-2 max-w-2xl">
+            A diverse team of engineers, designers, and strategists obsessed
+            with quality.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {teamMembers.map((m, i) => (
             <motion.div
               key={i}
-              variants={fadeIn("up", "spring", i * 0.06, 0.8)}
-              className="p-4 bg-[#071023] rounded-[12px] border border-white/6 flex items-center gap-4"
+              variants={isMobile ? {} : fadeIn("up", "spring", i * 0.1, 0.8)}
+              initial={isMobile ? { opacity: 1, y: 0 } : "hidden"}
+              animate={isMobile ? { opacity: 1, y: 0 } : "show"}
+              className="group relative p-[1px] rounded-[20px] bg-gradient-to-b from-white/10 to-transparent hover:from-[#38b6ff]/50 hover:to-cyan-400/50 transition-all duration-300"
             >
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-cyan-300 flex items-center justify-center text-black font-bold">
-                {m.initials}
-              </div>
-              <div>
-                <p className="text-white font-semibold">{m.name}</p>
-                <p className="text-secondary text-sm">{m.role}</p>
+              <div className="bg-[#0b1121] p-6 sm:p-8 rounded-[19px] h-full flex flex-col sm:flex-row gap-6 items-start relative z-10">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-black font-bold text-xl sm:text-2xl shadow-lg flex-shrink-0 group-hover:scale-105 transition-transform duration-300">
+                  {m.initials}
+                </div>
+
+                <div className="flex-1">
+                  <h4 className="text-white text-xl font-bold group-hover:text-[#38b6ff] transition-colors">
+                    {m.name}
+                  </h4>
+                  <p className="text-blue-200/80 text-sm font-medium mt-1 uppercase tracking-wide">
+                    {m.role}
+                  </p>
+
+                  <p className="text-secondary text-sm mt-3 leading-relaxed">
+                    {m.bio}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {m.skills.map((skill, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[11px] px-2.5 py-1 rounded-full bg-white/5 text-white/70 border border-white/5 group-hover:border-white/10 transition-colors"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
-      </div>
-
-      <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {[
-          { value: "60+", label: "Projects Delivered" },
-          { value: "40+", label: "Happy Clients" },
-          { value: "99%", label: "Uptime & SLA" },
-        ].map((s, i) => (
-          <motion.div
-            variants={fadeIn("up", "spring", i * 0.06, 0.8)}
-            key={i}
-            className="p-6 rounded-[12px] bg-gradient-to-r from-[#0ea5e9] to-[#06b6d4] text-white shadow"
-          >
-            <p className="text-[26px] font-extrabold">{s.value}</p>
-            <p className="text-[13px] mt-1">{s.label}</p>
-          </motion.div>
-        ))}
       </div>
 
       <Modal open={modalOpen} onClose={closeModal} service={activeService} />
