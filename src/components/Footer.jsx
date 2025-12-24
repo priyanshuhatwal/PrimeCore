@@ -82,20 +82,15 @@ const Footer = () => {
             <li className="flex items-center gap-3 hover:text-[#38b6ff] transition-all">
               <FaEnvelope /> primecoretechworks@gmail.com
             </li>
+            <a
+              href="https://www.instagram.com/primecore_it"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 hover:text-[#38b6ff] transition-all"
+            >
+              <FaInstagram /> primecore_it
+            </a>
           </ul>
-
-          {/* Socials */}
-          <div className="flex gap-5 text-2xl mt-6">
-            <a className="text-gray-400 hover:text-[#38b6ff] transition-all cursor-pointer hover:scale-110">
-              <FaInstagram />
-            </a>
-            <a className="text-gray-400 hover:text-[#38b6ff] transition-all cursor-pointer hover:scale-110">
-              <FaLinkedin />
-            </a>
-            <a className="text-gray-400 hover:text-[#38b6ff] transition-all cursor-pointer hover:scale-110">
-              <FaGithub />
-            </a>
-          </div>
         </div>
       </div>
 

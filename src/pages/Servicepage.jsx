@@ -106,7 +106,7 @@ const Services = () => {
         </div>
 
         <a
-          href="/contact"
+          href="/contactpage"
           className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-[12px] shadow hover:opacity-90 transition"
         >
           Contact Us
